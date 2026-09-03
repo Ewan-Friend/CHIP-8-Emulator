@@ -84,4 +84,38 @@ impl Chip8 {
         self.sp -= 1;
         self.stack[self.sp as usize]
     }
+
+    pub fn tick(&mut self) {
+        let op = self.fetch();
+
+        self.run(op);
+    }
+
+    fn run(&mut self, op: u16){
+        //TODO
+        //Match patterns of opcodes to specific events
+        //Doing this one myself!
+    }
+
+    fn fetch(&mut self) -> u16 {
+        let b1 = self.memory[self.pc as usize] as u16;
+        let b2 = self.memory[(self.pc + 1) as usize] as u16;
+        self.op = (b1 << 8) | b2;
+        self.pc += 2;
+        op
+    }
+
+    pub fn timer_tick(&mut self) {
+        if self.dt > 0 {
+            self.dt -= 1;
+        }
+
+        if self.st > 0 {
+            if self.st == 1 {
+                // Make beep
+            }
+
+            self.st -= 1;
+        }
+    }
 }
