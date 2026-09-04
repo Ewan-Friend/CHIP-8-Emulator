@@ -31,7 +31,7 @@ const FONTSET: [u8; FONTSET_SIZE] = [
 pub struct Chip8 {
     pc: u16,
     memory: [u8; MEM_SIZE],
-    frame_buffer: [bool; SCREEN_HEIGHT * SCREEN_WIDTH],
+    frame_buffer: [bool; SCREEN_WIDTH * SCREEN_HEIGHT],
     v_reg: [u8; NUM_REGS],
     i_reg: u16,
     sp: u16,
@@ -46,7 +46,7 @@ impl Chip8 {
         let mut chip8_default = Self {
             pc: START_ADDRESS,
             memory: [0; MEM_SIZE],
-            frame_buffer: [false; SCREEN_HEIGHT * SCREEN_WIDTH],
+            frame_buffer: [false; SCREEN_WIDTH * SCREEN_HEIGHT],
             v_reg: [0; NUM_REGS],
             i_reg: 0,
             sp: 0,
@@ -64,7 +64,7 @@ impl Chip8 {
     pub fn wipe(&mut self) {
         self.pc = START_ADDRESS;
         self.memory = [0; MEM_SIZE];
-        self.frame_buffer = [false; SCREEN_HEIGHT * SCREEN_WIDTH];
+        self.frame_buffer = [false; SCREEN_WIDTH * SCREEN_HEIGHT];
         self.v_reg = [0; NUM_REGS];
         self.i_reg = 0;
         self.sp = 0;
@@ -108,6 +108,32 @@ impl Chip8 {
         let digits = self.split_digits(op);
 
         match digits {
+            // 0000
+            // NOP
+            // Does nothing
+            (0, 0, 0, 0) => {
+                return
+            },
+            // 00E0
+            // CLS
+            // Clear the display
+            (0, 0, 0xE, 0) => {
+                self.frame_buffer = [false; SCREEN_WIDTH * SCREEN_HEIGHT];
+            },
+            // 00EE
+            // RET
+            // Return from subroutine
+            (0, 0, 0xE, 0xE) => {
+                self.pc = self.pop();
+            },
+            // 1nnn
+            // JP addr
+            // Jumps to location nnn
+            (1, _, _, _) => {
+                let nnn = op & 0xFFF;
+                self.pc = nnn;
+            }
+            // ALWAYS KEEP LAST
             (_, _, _, _) => unimplemented!("This opcode has not yet been implemented: {}", op),
         }
     }
