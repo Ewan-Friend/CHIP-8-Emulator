@@ -91,16 +91,31 @@ impl Chip8 {
         self.run(op);
     }
 
+    fn split_digits(&mut self, op: u16) -> (u8, u8, u8, u8){
+        let d1 = ((op & 0xF000) >> 12) as u8;
+        let d2 = ((op & 0x0F00) >> 8) as u8;
+        let d3 = ((op & 0x00F0) >> 4) as u8;
+        let d4 = (op & 0x000F) as u8;
+
+        (d1, d2, d3, d4)
+    }
+
     fn run(&mut self, op: u16){
         //TODO
         //Match patterns of opcodes to specific events
         //Doing this one myself!
+
+        let digits = self.split_digits(op);
+
+        match digits {
+            (_, _, _, _) => unimplemented!("This opcode has not yet been implemented: {}", op),
+        }
     }
 
     fn fetch(&mut self) -> u16 {
         let b1 = self.memory[self.pc as usize] as u16;
         let b2 = self.memory[(self.pc + 1) as usize] as u16;
-        self.op = (b1 << 8) | b2;
+        let op = (b1 << 8) | b2;
         self.pc += 2;
         op
     }
