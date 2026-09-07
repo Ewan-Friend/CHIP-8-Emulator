@@ -173,7 +173,7 @@ impl Chip8 {
                 if self.v_reg[x] == self.v_reg[y] {
                     self.pc += 2;
                 }
-            }
+            },
             // 6xkk 
             // LD Vx, byte
             // Set Vx = kk
@@ -182,7 +182,7 @@ impl Chip8 {
                 let kk = (op & 0xFF) as u8;
 
                 self.v_reg[x] = kk;
-            }
+            },
             // 7xkk 
             // ADD Vx, byte 
             // Set Vx = Vx + kk
@@ -192,10 +192,62 @@ impl Chip8 {
 
                 let acc = self.v_reg[x];
                 self.v_reg[x] = kk + acc;
+            },
+            // 8xy0 
+            // LD Vx, Vy 
+            // Stores value of register Vy in Register Vx
+            (8, _, _, 0) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let y = ((op & 0x0F0) >> 4) as usize;
+
+                self.v_reg[x] = self.v_reg[y];
+            },
+            // 8xy1
+            // OR Vx, Vy
+            // Set Vx = Vx OR Vy
+            (8, _, _, 1) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let y = ((op & 0x0F0) >> 4) as usize;
+
+                let result = self.v_reg[x] | self.v_reg[y];
+                self.v_reg[x] = result;
+            },
+            // 8xy2
+            // AND Vx, Vy
+            // Set Vx = Vx OR Vy
+            (8, _, _, 2) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let y = ((op & 0x0F0) >> 4) as usize;
+
+                let result = self.v_reg[x] & self.v_reg[y];
+                self.v_reg[x] = result;
+            },
+            // 8xy3
+            // XOR Vx, Vy
+            // Set Vx = Vx XOR Vy
+            (8, _, _, 3) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let y = ((op & 0x0F0) >> 4) as usize;
+
+                let result = self.v_reg[x] ^ self.v_reg[y];
+                self.v_reg[x] = result;
+            }
+            // 8xy4
+            // ADD Vx, Vy
+            // Set Vx = Vx + Vy, set VF = carry
+            (8, _, _, 4) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let y = ((op & 0x0F0) >> 4) as usize;
+
+                let (result, carry) = self.v_reg[x]
+                    .overflowing_add(self.v_reg[y]);
+
+                self.v_reg[x] = result;
+                self.v_reg[0xF] = if carry {1} else {0}
             }
             // ALWAYS KEEP LAST
             (_, _, _, _) => unimplemented!("This opcode has not yet been implemented: {}", op),
-        }
+        };
     }
 
     fn fetch(&mut self) -> u16 {
@@ -213,7 +265,7 @@ impl Chip8 {
 
         if self.st > 0 {
             if self.st == 1 {
-                // Make beep
+                // TODO: Make beep
             }
 
             self.st -= 1;
