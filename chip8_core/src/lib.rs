@@ -132,6 +132,66 @@ impl Chip8 {
             (1, _, _, _) => {
                 let nnn = op & 0xFFF;
                 self.pc = nnn;
+            },
+            // 2nnn 
+            // CALL addr 
+            // Call subroutine at nnn 
+            (2, _, _, _) => {
+                let nnn = op & 0xFFF;
+                self.push(self.pc);
+                self.pc = nnn; 
+            },
+            // 3xkk
+            // SE Vx, byte 
+            // Skip the next instruction if Vx = kk
+            (3, _, _, _) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let kk = (op & 0xFF) as u8;
+
+                if self.v_reg[x] == kk {
+                    self.pc += 2;
+                }
+            },
+            // 4xkk 
+            // SNE Vx, byte
+            // Skip the next instruction if Vx != kk
+            (4, _, _, _) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let kk = (op & 0xFF) as u8;
+
+                if self.v_reg[x] != kk {
+                    self.pc += 2;
+                }
+            },
+            // 5xy0
+            // SE Vx, Vy
+            // Skip the next instruction if Vx == Vy 
+            (5, _, _, 0) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let y = ((op & 0x0F0) >> 4) as usize;
+
+                if self.v_reg[x] == self.v_reg[y] {
+                    self.pc += 2;
+                }
+            }
+            // 6xkk 
+            // LD Vx, byte
+            // Set Vx = kk
+            (6, _, _, _) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let kk = (op & 0xFF) as u8;
+
+                self.v_reg[x] = kk;
+            }
+            // 7xkk 
+            // ADD Vx, byte 
+            // Set Vx = Vx + kk
+            (7, _, _, _) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let kk = (op & 0xFF) as u8;
+
+                let acc = self.v_reg[x];
+                self.v_reg[x] = kk + acc;
             }
             // ALWAYS KEEP LAST
             (_, _, _, _) => unimplemented!("This opcode has not yet been implemented: {}", op),
