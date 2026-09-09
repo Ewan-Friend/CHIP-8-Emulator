@@ -231,7 +231,7 @@ impl Chip8 {
 
                 let result = self.v_reg[x] ^ self.v_reg[y];
                 self.v_reg[x] = result;
-            }
+            },
             // 8xy4
             // ADD Vx, Vy
             // Set Vx = Vx + Vy, set VF = carry
@@ -243,8 +243,56 @@ impl Chip8 {
                     .overflowing_add(self.v_reg[y]);
 
                 self.v_reg[x] = result;
-                self.v_reg[0xF] = if carry {1} else {0}
-            }
+                self.v_reg[0xF] = if carry {1} else {0};
+            },
+            // 8xy5
+            // SUB Vx, Vy
+            // Set Vx = Vx - Vy, set VF = NOT borrow
+            (8, _, _, 5) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let y = ((op & 0x0F0) >> 4) as usize;
+
+                let (result, borrow) = self.v_reg[x]
+                    .overflowing_sub(self.v_reg[y]);
+
+                self.v_reg[x] = result;
+                self.v_reg[0xF] = if borrow {0} else {1};
+            },
+            // 8xy6
+            // SHR Vx {, Vy}
+            // Set Vx = Vx SHR 1
+            (8, _, _, 6) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+
+                let remainder = self.v_reg[x] & 0b1;
+
+                self.v_reg[x] >>= 1;
+                self.v_reg[0xF] = remainder;
+            },
+            // 8xy7
+            // SUBN Vx, Vy
+            // Set Vx = Vy - Vx, set VF = NOT borrow
+            (8, _, _, 7) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let y = ((op & 0x0F0) >> 4) as usize;
+
+                let (result, borrow) = self.v_reg[y]
+                    .overflowing_sub(self.v_reg[x]);
+
+                self.v_reg[x] = result;
+                self.v_reg[0xF] = if borrow {0} else {1};
+            },
+            // 8xyE
+            // SHL Vx {, Vy}
+            // Set Vx = Vx SHL 1
+            (8, _, _, 0xE) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+
+                let overflow = (self.v_reg[x] >> 7) & 0b1;
+
+                self.v_reg[x] <<= 1;
+                self.v_reg[0xF] = overflow;
+            },
             // ALWAYS KEEP LAST
             (_, _, _, _) => unimplemented!("This opcode has not yet been implemented: {}", op),
         };
