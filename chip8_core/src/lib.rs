@@ -1,3 +1,5 @@
+use rand;
+
 const SCREEN_HEIGHT: usize = 32;
 const SCREEN_WIDTH: usize = 64;
 
@@ -323,6 +325,13 @@ impl Chip8 {
             // Cxkk
             // RND Vx, byte
             // Set Vx = random byte AND kk
+            (0xC, _, _, _) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let kk = (op & 0xFF) as u8;
+                let byte = rand::random::<u8>();
+
+                self.v_reg[x] = byte & kk;
+            }
             // ALWAYS KEEP LAST
             (_, _, _, _) => unimplemented!("This opcode has not yet been implemented: {}", op),
         };
