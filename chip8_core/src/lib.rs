@@ -293,6 +293,36 @@ impl Chip8 {
                 self.v_reg[x] <<= 1;
                 self.v_reg[0xF] = overflow;
             },
+            // 9xy0
+            // SNE Vx, Vy
+            // Skip next insturction if Vx != Vy
+            (9, _, _, 0) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let y = ((op & 0x0F0) >> 4) as usize;
+
+                if self.v_reg[x] != self.v_reg[y] {
+                    self.pc += 2;
+                }
+            }
+            // Annn
+            // LD I, addr
+            // Set I = nnn 
+            (0xA, _, _, _) => {
+                let nnn = op & 0xFFF;
+
+                self.i_reg = nnn;
+            }
+            // Bnnn
+            // JP V0, addr
+            // Jump to location nnn + v0
+            (0xB, _, _, _) => {
+                let nnn = op & 0xFFF;
+
+                self.pc = nnn + (self.v_reg[0] as u16);
+            }
+            // Cxkk
+            // RND Vx, byte
+            // Set Vx = random byte AND kk
             // ALWAYS KEEP LAST
             (_, _, _, _) => unimplemented!("This opcode has not yet been implemented: {}", op),
         };
