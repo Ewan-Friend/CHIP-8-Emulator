@@ -1,4 +1,5 @@
 use rand;
+use std::io;
 
 const SCREEN_HEIGHT: usize = 32;
 const SCREEN_WIDTH: usize = 64;
@@ -38,7 +39,7 @@ pub struct Chip8 {
     i_reg: u16,
     sp: u16,
     stack: [u16; STACK_SIZE],
-    keys: [u16; NUM_KEYS],
+    keys: [bool; NUM_KEYS],
     dt: u8,
     st: u8,
 }
@@ -53,7 +54,7 @@ impl Chip8 {
             i_reg: 0,
             sp: 0,
             stack: [0; STACK_SIZE],
-            keys: [0; NUM_KEYS],
+            keys: [false; NUM_KEYS],
             dt: 0,
             st: 0,
         };
@@ -71,7 +72,7 @@ impl Chip8 {
         self.i_reg = 0;
         self.sp = 0;
         self.stack = [0; STACK_SIZE];
-        self.keys = [0; NUM_KEYS];
+        self.keys = [false; NUM_KEYS];
         self.dt = 0;
         self.st = 0;
         self.memory[0..FONTSET_SIZE].copy_from_slice(&FONTSET);
@@ -305,7 +306,7 @@ impl Chip8 {
                 if self.v_reg[x] != self.v_reg[y] {
                     self.pc += 2;
                 }
-            }
+            },
             // Annn
             // LD I, addr
             // Set I = nnn 
@@ -313,7 +314,7 @@ impl Chip8 {
                 let nnn = op & 0xFFF;
 
                 self.i_reg = nnn;
-            }
+            },
             // Bnnn
             // JP V0, addr
             // Jump to location nnn + v0
@@ -321,7 +322,7 @@ impl Chip8 {
                 let nnn = op & 0xFFF;
 
                 self.pc = nnn + (self.v_reg[0] as u16);
-            }
+            },
             // Cxkk
             // RND Vx, byte
             // Set Vx = random byte AND kk
@@ -331,6 +332,61 @@ impl Chip8 {
                 let byte = rand::random::<u8>();
 
                 self.v_reg[x] = byte & kk;
+            },
+            // Dxyn
+            // DRW Vx, Vy, nibble
+            // Display n-byte sprite starting at memory location I 
+            // at (Vx, Vy), set VF = collision
+            (0xD, _, _, _) => {
+                let x = ((op & 0xF00) >> 8) as u16;
+                let y = ((op & 0x0F0) >> 4) as u16;
+                let n = op & 0xF;
+
+                let mut toggled: bool = false;
+
+                // Iterate through rows of the screen
+                for yline in 0..n {
+                    let addr = self.i_reg + yline as u16;
+                    let pixels = self.memory[addr as usize];
+                    
+                    for xline in 0..8 {
+                        if (pixels & (0b00000001 >> xline)) != 0 {
+                            // Wrap around
+                            let x = (x + xline) as usize % SCREEN_WIDTH;
+                            let y = (y + yline) as usize % SCREEN_HEIGHT;
+
+                            // 1D -> 2D
+                            let idx = y * SCREEN_WIDTH + x;
+
+                            toggled |= self.frame_buffer[idx];
+                            self.frame_buffer[idx] ^= true;
+                        }
+                    } 
+                }
+
+                self.v_reg[0xF] = if toggled {1} else {0}
+            },
+            // Ex9E 
+            // SKP Vx
+            // Skip next instruction if key with the value of Vx is pressed
+            (0xE, _, 9, 0xE) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let rune = self.v_reg[x];
+
+                if self.keys[rune as usize] {
+                    self.pc += 2;
+                }
+            }
+            // ExA1 
+            // SKNP Vx
+            // Skip next instruction if the key with value of Vx is not pressed
+            (0xE, _, 0xA, 1) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let rune = self.v_reg[x];
+
+                if !self.keys[rune as usize] {
+                    self.pc += 2;
+                }
             }
             // ALWAYS KEEP LAST
             (_, _, _, _) => unimplemented!("This opcode has not yet been implemented: {}", op),
