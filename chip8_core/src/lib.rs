@@ -376,7 +376,7 @@ impl Chip8 {
                 if self.keys[rune as usize] {
                     self.pc += 2;
                 }
-            }
+            },
             // ExA1 
             // SKNP Vx
             // Skip next instruction if the key with value of Vx is not pressed
@@ -387,6 +387,53 @@ impl Chip8 {
                 if !self.keys[rune as usize] {
                     self.pc += 2;
                 }
+            },
+            // Fx07 
+            // LD Vx, DT
+            // Set Vx = delay timer value
+            (0xF, _, 0, 7) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                self.v_reg[x] = self.dt;
+            },
+            // Fx0A
+            // LD Vx, K
+            // Wait for a key press, store the value of the key in Vx
+            (0xF, _, 0, 0xA) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let mut toggled = false;
+                
+                for i in 0..self.keys.len() {
+                    if self.keys[i] {
+                        self.v_reg[x] = i as u8; 
+                        toggled = true;
+                        break;
+                    }
+                }
+
+                if !toggled {
+                    self.pc -= 2;
+                }
+            }
+            // Fx15
+            // LD DT, Vx
+            // DT is set equal to the value of Vx
+            (0xF, _, 1, 5) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                self.dt = self.v_reg[x];
+            }
+            // Fx18
+            // LD ST, Vx
+            // Set I = I + Vx
+            (0xF, _, 1, 8) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                self.st = self.v_reg[x];
+            }
+            // Fx1E
+            // ADD I, Vx
+            // Set I = I + Vx
+            (0xF, _, 1, 0xE) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                self.i_reg += self.v_reg[x] as u16;
             }
             // ALWAYS KEEP LAST
             (_, _, _, _) => unimplemented!("This opcode has not yet been implemented: {}", op),
