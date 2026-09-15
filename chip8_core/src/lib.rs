@@ -433,7 +433,32 @@ impl Chip8 {
             // Set I = I + Vx
             (0xF, _, 1, 0xE) => {
                 let x = ((op & 0xF00) >> 8) as usize;
-                self.i_reg += self.v_reg[x] as u16;
+                self.i_reg = self.i_reg.wrapping_add(self.v_reg[x] as u16);
+            },
+            // Fx29
+            // LD F, Vx
+            // Set I = location of sprite for digit Vx
+            (0xF, _, 2, 9) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let font_addr = (self.v_reg[x] as u16) * 5;
+                self.i_reg = font_addr;
+            }
+            // Fx33
+            // LD B, Vx
+            // Store BCD representation of Vx in memory locations I, I + 1, and I + 2
+            (0xF, _, 3, 3) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+                let n = self.v_reg[x];
+
+                self.memory[self.i_reg as usize] = n / 100;
+                self.memory[(self.i_reg + 1) as usize] = (n / 10) % 10;
+                self.memory[(self.i_reg + 2) as usize] = n % 10;
+            }
+            // Fx55
+            // LD [I], Vx
+            // Store registers V0 through Vx in memory starting at location I
+            (0xF, _, 5, 5) => {
+                let x = ((op & 0xF00) >> 8) as usize;
             }
             // ALWAYS KEEP LAST
             (_, _, _, _) => unimplemented!("This opcode has not yet been implemented: {}", op),
