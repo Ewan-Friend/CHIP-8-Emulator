@@ -502,4 +502,18 @@ impl Chip8 {
             self.st -= 1;
         }
     }
+
+    pub fn get_display(&self) -> &[bool] {
+        &self.frame_buffer
+    }
+
+    pub fn keypress(&mut self, i: usize, pressed:bool) {
+        self.keys[i] = pressed;
+    }
+
+    pub fn load(&mut self, data: &[u8]) {
+        let s= START_ADDRESS as usize;
+        let e= (START_ADDRESS as usize) + data.len();
+        self.memory[s..e].copy_from_slice(data);
+    }
 }
