@@ -1,5 +1,6 @@
 use rand;
-use std::io;
+use actually_beep;
+use std::{thread, time::Duration};
 
 const SCREEN_HEIGHT: usize = 32;
 const SCREEN_WIDTH: usize = 64;
@@ -11,6 +12,9 @@ const NUM_KEYS: usize = 16;
 const START_ADDRESS: u16 = 0x200;
 
 const FONTSET_SIZE: usize = 80;
+
+const BEEP_HERTZ: u32 = 600;
+const BEEP_LENGTH: u32 = 200;
 
 const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0x90, 0x90, 0x90, 0xF0, //0
@@ -496,9 +500,9 @@ impl Chip8 {
 
         if self.st > 0 {
             if self.st == 1 {
-                // TODO: Make beep
+                actually_beep::beep_with_hz_and_millis
+                    (BEEP_HERTZ, BEEP_LENGTH).unwrap();
             }
-
             self.st -= 1;
         }
     }
