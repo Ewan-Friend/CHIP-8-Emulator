@@ -459,6 +459,22 @@ impl Chip8 {
             // Store registers V0 through Vx in memory starting at location I
             (0xF, _, 5, 5) => {
                 let x = ((op & 0xF00) >> 8) as usize;
+
+                for i in 0..=x {
+                    let val = self.v_reg[i];
+                    self.memory[(self.i_reg as usize) + i] = val;
+                }
+            }
+            // Fx65
+            // LD Vx, [I]
+            // Read registers V0 through Vx from memory starting at location I
+            (0xF, _, 6, 5) => {
+                let x = ((op & 0xF00) >> 8) as usize;
+
+                for i in 0..x {
+                    let val = self.memory[(self.i_reg as usize) + i];
+                    self.v_reg[i] = val;
+                }
             }
             // ALWAYS KEEP LAST
             (_, _, _, _) => unimplemented!("This opcode has not yet been implemented: {}", op),
