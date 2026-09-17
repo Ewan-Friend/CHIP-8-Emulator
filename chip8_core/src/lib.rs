@@ -1,9 +1,14 @@
+// ----- Chip 8 Emulator ----- 
+//! # Chip 8 Emulator crate
+//!
+//! A rudimentary emulator that can run CHIP 8 games 
 use rand;
 use actually_beep;
-use std::{thread, time::Duration};
 
-const SCREEN_HEIGHT: usize = 32;
-const SCREEN_WIDTH: usize = 64;
+/// Height of the game screen in pixels
+pub const SCREEN_HEIGHT: usize = 32;
+/// Width of the game screen in pixels
+pub const SCREEN_WIDTH: usize = 64;
 
 const MEM_SIZE: usize = 4096;
 const NUM_REGS: usize = 16;
@@ -35,6 +40,7 @@ const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80  //F
 ];
 
+/// Chip8 registers
 pub struct Chip8 {
     pc: u16,
     memory: [u8; MEM_SIZE],
@@ -49,6 +55,7 @@ pub struct Chip8 {
 }
 
 impl Chip8 {
+    /// Initialises registers to default
     pub fn new() -> Self {
         let mut chip8_default = Self {
             pc: START_ADDRESS,
@@ -68,6 +75,7 @@ impl Chip8 {
         chip8_default
     }
 
+    /// Resets all registers to default values
     pub fn wipe(&mut self) {
         self.pc = START_ADDRESS;
         self.memory = [0; MEM_SIZE];
@@ -82,16 +90,21 @@ impl Chip8 {
         self.memory[0..FONTSET_SIZE].copy_from_slice(&FONTSET);
     }
 
+    /// Push a value to the stack then increment the
+    /// stack pointer by 1
     pub fn push(&mut self , val: u16) {
         self.stack[self.sp as usize] = val;
         self.sp += 1;
     }
 
+    /// Take a value from the top of the stack then decrement
+    /// the stack pointer by 1
     pub fn pop(&mut self) -> u16 {
         self.sp -= 1;
         self.stack[self.sp as usize]
     }
 
+    /// Performs one tick of the emulators cycle
     pub fn tick(&mut self) {
         let op = self.fetch();
 
@@ -107,10 +120,8 @@ impl Chip8 {
         (d1, d2, d3, d4)
     }
 
+    /// Decodes the opcode and runs the corresponding command
     fn run(&mut self, op: u16){
-        //TODO
-        //Match patterns of opcodes to specific events
-        //Doing this one myself!
 
         let digits = self.split_digits(op);
 
@@ -493,6 +504,7 @@ impl Chip8 {
         op
     }
 
+    /// Decrements each timer by 1 if able 
     pub fn timer_tick(&mut self) {
         if self.dt > 0 {
             self.dt -= 1;
@@ -507,14 +519,17 @@ impl Chip8 {
         }
     }
 
+    /// Returns the frame buffer for the current point of execution
     pub fn get_display(&self) -> &[bool] {
         &self.frame_buffer
     }
 
+    /// Register a key as pressed
     pub fn keypress(&mut self, i: usize, pressed:bool) {
         self.keys[i] = pressed;
     }
 
+    /// Loads data into memory
     pub fn load(&mut self, data: &[u8]) {
         let s= START_ADDRESS as usize;
         let e= (START_ADDRESS as usize) + data.len();
